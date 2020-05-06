@@ -3,6 +3,7 @@
 
 # build artifacts
 *.egg-info
+dist/
 
 # test coverage
 .coverage
