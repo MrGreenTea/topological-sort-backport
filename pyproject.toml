@@ -6,7 +6,7 @@ authors = ["Jonas Bulik <jonas@bulik.dev>"]
 repository = "https://github.com/MrGreenTea/topological-sort-backport"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = ">=3.6 <3.9"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
