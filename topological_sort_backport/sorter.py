@@ -1,7 +1,7 @@
 ################################################################################
 ### topological sort
 ################################################################################
-from typing import Optional, Dict, Hashable, Iterable, Tuple, Iterator
+from typing import Optional, Iterable, Tuple, Iterator, TypeVar, Generic, Mapping
 
 _NODE_OUT = -1
 _NODE_DONE = -2
@@ -37,10 +37,13 @@ class CycleError(ValueError):
     pass
 
 
-class TopologicalSorter:
+T = TypeVar("T")
+
+
+class TopologicalSorter(Generic[T]):
     """Provides functionality to topologically sort a graph of hashable nodes"""
 
-    def __init__(self, graph: Optional[Dict[Hashable, Iterable[Hashable]]] = None) -> None:
+    def __init__(self, graph: Optional[Mapping[T, Iterable[T]]] = None) -> None:
         self._node2info = {}
         self._ready_nodes = None
         self._npassedout = 0
@@ -50,12 +53,12 @@ class TopologicalSorter:
             for node, predecessors in graph.items():
                 self.add(node, *predecessors)
 
-    def _get_nodeinfo(self, node: Hashable):
+    def _get_nodeinfo(self, node: T):
         if (result := self._node2info.get(node)) is None:
             self._node2info[node] = result = _NodeInfo(node)
         return result
 
-    def add(self, node: Hashable, *predecessors: Hashable) -> None:
+    def add(self, node: T, *predecessors: T) -> None:
         """Add a new node and its predecessors to the graph.
 
         Both the *node* and all elements in *predecessors* must be hashable.
@@ -103,7 +106,7 @@ class TopologicalSorter:
         if cycle:
             raise CycleError(f"nodes are in a cycle", cycle)
 
-    def get_ready(self) -> Tuple[Hashable, ...]:
+    def get_ready(self) -> Tuple[T, ...]:
         """Return a tuple of all the nodes that are ready.
 
         Initially it returns all nodes with no predecessors; once those are marked
@@ -146,7 +149,7 @@ class TopologicalSorter:
     def __bool__(self) -> bool:
         return self.is_active()
 
-    def done(self, *nodes: Hashable) -> None:
+    def done(self, *nodes: T) -> None:
         """Marks a set of nodes returned by "get_ready" as processed.
 
         This method unblocks any successor of each node in *nodes* for being returned
@@ -228,7 +231,7 @@ class TopologicalSorter:
                     break
         return None
 
-    def static_order(self) -> Iterator[Hashable]:
+    def static_order(self) -> Iterator[T]:
         """Returns an iterable of nodes in a topological order.
 
         The particular order that is returned may depend on the specific
