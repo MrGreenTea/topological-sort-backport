@@ -1,0 +1,11 @@
+# pycache
+**/__pycache__
+
+# build artifacts
+*.egg-info
+
+# test coverage
+.coverage
+
+# PyCharm
+.idea/
