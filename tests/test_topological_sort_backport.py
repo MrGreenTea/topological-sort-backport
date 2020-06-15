@@ -3,7 +3,7 @@ import unittest.mock
 from itertools import chain
 from test.support.script_helper import assert_python_ok
 
-import topological_sort_backport
+import graphlib
 
 
 class TestTopologicalSort(unittest.TestCase):
@@ -18,19 +18,19 @@ class TestTopologicalSort(unittest.TestCase):
                     ts.done(node)
                 yield nodes
 
-        ts = topological_sort_backport.TopologicalSorter(graph)
+        ts = graphlib.TopologicalSorter(graph)
         self.assertEqual(list(static_order_with_groups(ts)), list(expected))
 
-        ts = topological_sort_backport.TopologicalSorter(graph)
+        ts = graphlib.TopologicalSorter(graph)
         self.assertEqual(list(ts.static_order()), list(chain(*expected)))
 
     def _assert_cycle(self, graph, cycle):
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         for node, dependson in graph.items():
             ts.add(node, *dependson)
         try:
             ts.prepare()
-        except topological_sort_backport.CycleError as e:
+        except graphlib.CycleError as e:
             msg, seq = e.args
             self.assertIn(' '.join(map(str, cycle)),
                           ' '.join(map(str, seq * 2)))
@@ -113,7 +113,7 @@ class TestTopologicalSort(unittest.TestCase):
                          [(2, 4), (1, 3, 0)])
 
         # Test adding the same dependency multiple times
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         ts.add(1, 2)
         ts.add(1, 2)
         ts.add(1, 2)
@@ -121,18 +121,18 @@ class TestTopologicalSort(unittest.TestCase):
 
     def test_graph_with_iterables(self):
         dependson = (2 * x + 1 for x in range(5))
-        ts = topological_sort_backport.TopologicalSorter({0: dependson})
+        ts = graphlib.TopologicalSorter({0: dependson})
         self.assertEqual(list(ts.static_order()), [1, 3, 5, 7, 9, 0])
 
     def test_add_dependencies_for_same_node_incrementally(self):
         # Test same node multiple times
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         ts.add(1, 2)
         ts.add(1, 3)
         ts.add(1, 4)
         ts.add(1, 5)
 
-        ts2 = topological_sort_backport.TopologicalSorter({1: {2, 3, 4, 5}})
+        ts2 = graphlib.TopologicalSorter({1: {2, 3, 4, 5}})
         self.assertEqual([*ts.static_order()], [*ts2.static_order()])
 
     def test_empty(self):
@@ -154,7 +154,7 @@ class TestTopologicalSort(unittest.TestCase):
         self._assert_cycle({1: {2}, 2: {3}, 3: {2, 4}, 4: {5}}, [3, 2])
 
     def test_calls_before_prepare(self):
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
 
         with self.assertRaisesRegex(ValueError, r"prepare\(\) must be called first"):
             ts.get_ready()
@@ -164,13 +164,13 @@ class TestTopologicalSort(unittest.TestCase):
             ts.is_active()
 
     def test_prepare_multiple_times(self):
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         ts.prepare()
         with self.assertRaisesRegex(ValueError, r"cannot prepare\(\) more than once"):
             ts.prepare()
 
     def test_invalid_nodes_in_done(self):
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         ts.add(1, 2, 3, 4)
         ts.add(2, 3, 4)
         ts.prepare()
@@ -182,7 +182,7 @@ class TestTopologicalSort(unittest.TestCase):
             ts.done(24)
 
     def test_done(self):
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         ts.add(1, 2, 3, 4)
         ts.add(2, 3)
         ts.prepare()
@@ -204,7 +204,7 @@ class TestTopologicalSort(unittest.TestCase):
         self.assertFalse(ts.is_active())
 
     def test_is_active(self):
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         ts.add(1, 2)
         ts.prepare()
 
@@ -219,7 +219,7 @@ class TestTopologicalSort(unittest.TestCase):
         self.assertFalse(ts.is_active())
 
     def test_not_hashable_nodes(self):
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         self.assertRaises(TypeError, ts.add, dict(), 1)
         self.assertRaises(TypeError, ts.add, 1, dict())
         self.assertRaises(TypeError, ts.add, dict(), dict())
@@ -232,14 +232,14 @@ class TestTopologicalSort(unittest.TestCase):
                 ts.done(*nodes)
                 yield set(nodes)
 
-        ts = topological_sort_backport.TopologicalSorter()
+        ts = graphlib.TopologicalSorter()
         ts.add(3, 2, 1)
         ts.add(1, 0)
         ts.add(4, 5)
         ts.add(6, 7)
         ts.add(4, 7)
 
-        ts2 = topological_sort_backport.TopologicalSorter()
+        ts2 = graphlib.TopologicalSorter()
         ts2.add(1, 0)
         ts2.add(3, 2, 1)
         ts2.add(4, 7)
@@ -251,8 +251,8 @@ class TestTopologicalSort(unittest.TestCase):
     def test_static_order_does_not_change_with_the_hash_seed(self):
         def check_order_with_hash_seed(seed):
             code = """if 1:
-                import topological_sort_backport
-                ts = topological_sort_backport.TopologicalSorter()
+                import graphlib
+                ts = graphlib.TopologicalSorter()
                 ts.add('blech', 'bluch', 'hola')
                 ts.add('abcd', 'blech', 'bluch', 'a', 'b')
                 ts.add('a', 'a string', 'something', 'b')
