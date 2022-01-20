@@ -1,14 +1,11 @@
-################################################################################
-### topological sort
-################################################################################
-from typing import Optional, Iterable, Tuple, Iterator, TypeVar, Generic, Mapping
+__all__ = ["TopologicalSorter", "CycleError"]
 
 _NODE_OUT = -1
 _NODE_DONE = -2
 
 
 class _NodeInfo:
-    __slots__ = 'node', 'npredecessors', 'successors'
+    __slots__ = "node", "npredecessors", "successors"
 
     def __init__(self, node):
         # The node this class is augmenting.
@@ -20,12 +17,13 @@ class _NodeInfo:
         self.npredecessors = 0
 
         # List of successor nodes. The list can contain duplicated elements as
-        # long as they're all reflected in the successor's npredecessors attribute).
+        # long as they're all reflected in the successor's npredecessors attribute.
         self.successors = []
 
 
 class CycleError(ValueError):
-    """Subclass of ValueError raised by TopologicalSorterif cycles exist in the graph
+    """Subclass of ValueError raised by TopologicalSorter.prepare if cycles
+    exist in the working graph.
 
     If multiple cycles exist, only one undefined choice among them will be reported
     and included in the exception. The detected cycle can be accessed via the second
@@ -34,16 +32,14 @@ class CycleError(ValueError):
     next node in the list. In the reported list, the first and the last node will be
     the same, to make it clear that it is cyclic.
     """
+
     pass
 
 
-T = TypeVar("T")
-
-
-class TopologicalSorter(Generic[T]):
+class TopologicalSorter:
     """Provides functionality to topologically sort a graph of hashable nodes"""
 
-    def __init__(self, graph: Optional[Mapping[T, Iterable[T]]] = None) -> None:
+    def __init__(self, graph=None):
         self._node2info = {}
         self._ready_nodes = None
         self._npassedout = 0
@@ -53,13 +49,12 @@ class TopologicalSorter(Generic[T]):
             for node, predecessors in graph.items():
                 self.add(node, *predecessors)
 
-    def _get_nodeinfo(self, node: T):
-        result = self._node2info.get(node)
-        if result is None:
+    def _get_nodeinfo(self, node):
+        if (result := self._node2info.get(node)) is None:
             self._node2info[node] = result = _NodeInfo(node)
         return result
 
-    def add(self, node: T, *predecessors: T) -> None:
+    def add(self, node, *predecessors):
         """Add a new node and its predecessors to the graph.
 
         Both the *node* and all elements in *predecessors* must be hashable.
@@ -86,7 +81,7 @@ class TopologicalSorter(Generic[T]):
             pred_info = self._get_nodeinfo(pred)
             pred_info.successors.append(node)
 
-    def prepare(self) -> None:
+    def prepare(self):
         """Mark the graph as finished and check for cycles in the graph.
 
         If any cycle is detected, "CycleError" will be raised, but "get_ready" can
@@ -97,8 +92,9 @@ class TopologicalSorter(Generic[T]):
         if self._ready_nodes is not None:
             raise ValueError("cannot prepare() more than once")
 
-        self._ready_nodes = [i.node for i in self._node2info.values()
-                             if i.npredecessors == 0]
+        self._ready_nodes = [
+            i.node for i in self._node2info.values() if i.npredecessors == 0
+        ]
         # ready_nodes is set before we look for cycles on purpose:
         # if the user wants to catch the CycleError, that's fine,
         # they can continue using the instance to grab as many
@@ -107,7 +103,7 @@ class TopologicalSorter(Generic[T]):
         if cycle:
             raise CycleError(f"nodes are in a cycle", cycle)
 
-    def get_ready(self) -> Tuple[T, ...]:
+    def get_ready(self):
         """Return a tuple of all the nodes that are ready.
 
         Initially it returns all nodes with no predecessors; once those are marked
@@ -133,8 +129,8 @@ class TopologicalSorter(Generic[T]):
 
         return result
 
-    def is_active(self) -> bool:
-        """Return True if more progress can be made and ``False`` otherwise.
+    def is_active(self):
+        """Return ``True`` if more progress can be made and ``False`` otherwise.
 
         Progress can be made if cycles do not block the resolution and either there
         are still nodes ready that haven't yet been returned by "get_ready" or the
@@ -147,14 +143,14 @@ class TopologicalSorter(Generic[T]):
             raise ValueError("prepare() must be called first")
         return self._nfinished < self._npassedout or bool(self._ready_nodes)
 
-    def __bool__(self) -> bool:
+    def __bool__(self):
         return self.is_active()
 
-    def done(self, *nodes: T) -> None:
+    def done(self, *nodes):
         """Marks a set of nodes returned by "get_ready" as processed.
 
         This method unblocks any successor of each node in *nodes* for being returned
-        in the future by a a call to "get_ready"
+        in the future by a call to "get_ready".
 
         Raises :exec:`ValueError` if any node in *nodes* has already been marked as
         processed by a previous call to this method, if a node was not added to the
@@ -170,15 +166,16 @@ class TopologicalSorter(Generic[T]):
         for node in nodes:
 
             # Check if we know about this node (it was added previously using add()
-            nodeinfo = n2i.get(node)
-            if nodeinfo is None:
+            if (nodeinfo := n2i.get(node)) is None:
                 raise ValueError(f"node {node!r} was not added using add()")
 
             # If the node has not being returned (marked as ready) previously, inform the user.
             stat = nodeinfo.npredecessors
             if stat != _NODE_OUT:
                 if stat >= 0:
-                    raise ValueError(f"node {node!r} was not passed out (still not ready)")
+                    raise ValueError(
+                        f"node {node!r} was not passed out (still not ready)"
+                    )
                 elif stat == _NODE_DONE:
                     raise ValueError(f"node {node!r} was already marked done")
                 else:
@@ -212,7 +209,7 @@ class TopologicalSorter(Generic[T]):
                     # If we have seen already the node and is in the
                     # current stack we have found a cycle.
                     if node in node2stacki:
-                        return stack[node2stacki[node]:] + [node]
+                        return stack[node2stacki[node] :] + [node]
                     # else go on to get next successor
                 else:
                     seen.add(node)
@@ -233,7 +230,7 @@ class TopologicalSorter(Generic[T]):
                     break
         return None
 
-    def static_order(self) -> Iterator[T]:
+    def static_order(self):
         """Returns an iterable of nodes in a topological order.
 
         The particular order that is returned may depend on the specific
