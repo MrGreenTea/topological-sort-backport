@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "topological-sort-backport"
+name = "graphlib-backport"
 packages = [
  { include = "graphlib.py"}
 ]
@@ -8,7 +8,14 @@ description = ""
 authors = ["Jonas Bulik <jonas@bulik.dev>"]
 repository = "https://github.com/MrGreenTea/topological-sort-backport"
 classifiers = [
-  "Development Status :: 3 - Alpha"
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Topic :: Utilities",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development",
 ]
 
 [tool.poetry.dependencies]
