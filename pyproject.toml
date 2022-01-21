@@ -3,7 +3,7 @@ name = "graphlib-backport"
 packages = [
  { include = "graphlib.py"}
 ]
-version = "0.4.0"
+version = "0.5.0"
 description = ""
 authors = ["Jonas Bulik <jonas@bulik.dev>"]
 repository = "https://github.com/MrGreenTea/topological-sort-backport"
